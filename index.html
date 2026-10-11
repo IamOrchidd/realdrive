@@ -202,8 +202,13 @@ function updatePhysics(dt){
  const speed=Math.hypot(car.vf,car.vr);
  // Speed-sensitive steering: large lock for parking, much smaller lock at speed.
  // Large steering lock for parking, progressively less lock as speed rises.
- const steerMax=0.52/(1+speed/8);
- car.steer=THREE.MathUtils.damp(car.steer,steerInput*steerMax,6.8,dt);
+ // Keyboard steering is rate-limited so quick A/D taps do not snap the front tires to full lock.
+ // At speed, cap the digital steering angle near the tire's lateral-grip limit.
+ const steerMax=Math.min(0.48,Math.atan(1.05*g*wheelbase/Math.max(speed*speed,12)));
+ const steerTarget=steerInput*steerMax;
+ const speedBlend=THREE.MathUtils.smoothstep(speed,0,22);
+ const steerRate=steerInput===0 ? 2.0 : THREE.MathUtils.lerp(1.4,0.30,speedBlend);
+ car.steer+=THREE.MathUtils.clamp(steerTarget-car.steer,-steerRate*dt,steerRate*dt);
  // Static load transfer approximation for front/rear grip.
  const frontStatic=mass*g*lr/wheelbase, rearStatic=mass*g*lf/wheelbase;
  // A flatter, healthier low-RPM torque curve fixes the sluggish launch.
