@@ -253,9 +253,13 @@ function updatePhysics(dt){
  const lateral=frontRightForce+fyR;
  const yawMoment=-lf*frontRightForce+lr*fyR;
  const yawAccel=yawMoment/inertiaYaw;
- // Body-frame acceleration equations include the rotating-frame coupling terms.
- const af=longitudinal/mass+car.yawRate*car.vr;
- const ar=lateral/mass-car.yawRate*car.vf;
+ // Correct rotating-body-frame equations:
+ // forward acceleration = longitudinal force/mass - yawRate * lateral velocity
+ // right acceleration   = lateral force/mass + yawRate * forward velocity
+ // The previous signs were reversed, which fed lateral drift back into yaw and
+ // made steering taps feel like the car was being yanked to one side.
+ const af=longitudinal/mass-car.yawRate*car.vr;
+ const ar=lateral/mass+car.yawRate*car.vf;
  car.vf+=af*dt;car.vr+=ar*dt;car.yawRate+=yawAccel*dt;
  // Speed-sensitive natural stability and rolling resistance kill tiny idle drift.
  car.vr*=Math.pow(.997,dt*60);
